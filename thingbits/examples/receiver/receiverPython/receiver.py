@@ -20,7 +20,7 @@ try:
     readLetter = serialPort.read() 
     
     if readLetter == "\n":
-      print serialBuffer.strip()
+      print time.strftime("%Y-%m-%d %H-%M-%S|") + serialBuffer.strip()
       serialBuffer = ""
 
     else:
