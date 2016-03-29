@@ -1,32 +1,30 @@
-#include "exampleSetup.h"
+char* sensorType = "MST";
+char* myID = "1";
+int heartbeatInterval = 3600; // seconds
+int periodicReadingInterval = (4 * 60 * 60); // seconds, 0 for no periodic reading
 
-int pin_LED_POWER = 13; 
-int pin_ANTENNA_POWER = 10;
-int pin_MOISTURE = A0;
+#include "initialize.h"
 
-void setup() {  
-  pinMode(pin_LED_POWER, OUTPUT);
-  pinMode(pin_ANTENNA_POWER, OUTPUT);
-  exampleSetup();
+void setup() {
+  initializeSensor();
 }
 
 void loop() {
-  char message[22] = "Moisture Reading: ";
-  char moisture[9];
-  itoa(analogRead(pin_MOISTURE), moisture, 10);
+  sleepUntilEvent();
 
-  transmitString((char*) strcat(message, moisture));
+  processEvent();
+}
 
-  delay(5000);
-} 
-
-void transmitString(char* transmission) {
-  digitalWrite(pin_LED_POWER, HIGH);
-  digitalWrite (pin_ANTENNA_POWER, HIGH);
+void processEvent() {
+  int pinMoisture = 0; 
+  double percentMoist = double((1024 - analogRead(pinMoisture)) / 10);
+  if (percentMoist < 0) {
+    percentMoist = 0;
+  } else if (percentMoist > 100) {
+    percentMoist = 100;
+  }
+  char message[14]; 
+  dtoa(percentMoist, message, 0);
   
-  vw_send((uint8_t *)transmission, strlen(transmission));
-  vw_wait_tx();
-  
-  digitalWrite (pin_ANTENNA_POWER, LOW);
-  digitalWrite(pin_LED_POWER, LOW); 
+  sendPeriodic(message);
 }

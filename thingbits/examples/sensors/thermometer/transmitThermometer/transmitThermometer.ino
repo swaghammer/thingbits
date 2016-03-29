@@ -1,37 +1,26 @@
-#include "exampleSetup.h"
+char* sensorType = "THR";
+char* myID = "1";
+int heartbeatInterval = 3600; // seconds
+int periodicReadingInterval = 600; // seconds, 0 for no periodic reading
 
-int pin_LED_POWER = 13; 
-int pin_ANTENNA_POWER = 10;
-int pin_THERMOMETER = A0;
+#include "initialize.h"
 
-void setup() {  
-  pinMode(pin_LED_POWER, OUTPUT);
-  pinMode(pin_ANTENNA_POWER, OUTPUT);
-  exampleSetup();
+void setup() {
+  initializeSensor();
 }
 
 void loop() {
-  float averageReading = 0.0;
-  for (int i = 0; i < 10; i++) {
-    averageReading = averageReading + (((float(analogRead(pin_THERMOMETER)) * 0.2978515625) - 50.0) / 10.0);
-  }
+  sleepUntilEvent();
 
-  char message[22] = "Temperature Reading: ";
-  char temperature[10];
-  itoa(averageReading, temperature, 10);
+  processEvent();
+}
 
-  transmitString((char*) strcat(message, temperature));
-
-  delay(5000);
-} 
-
-void transmitString(char* transmission) {
-  digitalWrite(pin_LED_POWER, HIGH);
-  digitalWrite (pin_ANTENNA_POWER, HIGH);
+void processEvent() {
+  int pinThermometer = 0;
+  char units[6] = "F";
+  char message[14]; 
+  dtoa(readTemp(pinThermometer), message, 0);
+  strcat(message, units);
   
-  vw_send((uint8_t *)transmission, strlen(transmission));
-  vw_wait_tx();
-  
-  digitalWrite (pin_ANTENNA_POWER, LOW);
-  digitalWrite(pin_LED_POWER, LOW); 
+  sendPeriodic(message);
 }

@@ -1,7 +1,7 @@
-import httplib, urllib
 from serial import *
 import serial.tools.list_ports
 import time
+import datetime
 
 ports = sorted(serial.tools.list_ports.comports())
 i = 1
@@ -13,27 +13,36 @@ comPort = ports[selectedPort - 1][0]
 
 serialPort = Serial(comPort, 57600, timeout=0, writeTimeout=0)
 serialBuffer = ""
-lastMessage = time.clock()
 
-def sendSlackWebHook(message):
-  # https://api.slack.com/incoming-webhooks
-  httpRequest = httplib.HTTPConnection("https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", 80)
-  httpRequest.connect()
-  parameters = urllib.urlencode({'channel': 'baby-monitor', 'text': message, 'username': 'baby', 'icon_emoji': ':baby:'})
-  headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-  httpRequest.request('POST', '/text', parameters, headers);
-  response = httpRequest.getresponse()
-  print response.read() + "\n"
-  httpRequest.close()
-  
-def parseBuffer(serialBuffer, lastMessage):
-  if serialBuffer.find("Light Reading:") != -1:
-    brightness = int(serialBuffer.split("Light Reading:")[1].strip())
-    if brightness > 200 and time.clock() > (lastMessage + 60):
-      sendSlackWebHook("Fridge door is open.")
-      lastMessage = time.clock()
-  return lastMessage
-      
+def parsePacket(packet):
+  splitPacket = packet.split("|")
+  if splitPacket[1].strip() == "Unrecognized packet":
+    print packet
+    return False
+  parsedPacket = {'signal': splitPacket[0].strip()}
+  parsedPacket['sensorType'] = splitPacket[1].strip()
+  parsedPacket['sensorID'] = splitPacket[2].strip()
+  parsedPacket['messageType'] = splitPacket[3].strip()
+  parsedPacket['voltage'] = splitPacket[4].strip()
+  parsedPacket['payload'] = splitPacket[5].strip()
+  return parsedPacket
+
+def parseBuffer(serialBuffer, consecutiveOpen):
+  if serialBuffer.find("|") == -1:
+    print serialBuffer
+    return
+  parsedPacket = parsePacket(serialBuffer)
+  if parsedPacket != False:
+    if parsedPacket['sensorType'] == 'LIT':
+      if parsedPacket['sensorID'] == 'Solar':
+        print time.strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
+        fileDate = datetime.date.today()
+        fileName = "BrightnessLog_" + fileDate.isoformat() + ".txt"
+        logFile = open(fileName, 'a')
+        logTime = datetime.datetime.utcnow()
+        logFile.write(logTime.strftime("%H:%M:%S") + " " + parsedPacket['payload'] + "\n")
+        logFile.close()
+        
 print "\nCtrl-C to close COM port and exit.\n"
 
 try:
@@ -41,8 +50,7 @@ try:
     readLetter = serialPort.read() 
     
     if readLetter == "\n":
-      print serialBuffer
-      lastMessage = parseBuffer(serialBuffer, lastMessage)
+      parseBuffer(serialBuffer)
       serialBuffer = ""
 
     else:

@@ -3,8 +3,6 @@ from serial import *
 import serial.tools.list_ports
 from time import time, sleep
 
-phoneNumber = input("\nWhat phone number should receive the texts? (ex. 5551234567)\n")
-
 ports = sorted(serial.tools.list_ports.comports())
 i = 1
 print "\n"
@@ -16,30 +14,41 @@ comPort = ports[selectedPort - 1][0]
 
 serialPort = Serial(comPort, 57600, timeout=0, writeTimeout=0)
 serialBuffer = ""
-textDelay = 90; # seconds
-lastTextTime = time() - textDelay;
 
-def sendText(number, message):
-  httpRequest = httplib.HTTPConnection("textbelt.com", 80)
-  httpRequest.connect()
-  parameters = urllib.urlencode({'number': number, 'message': message})
-  headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
-  httpRequest.request('POST', '/text', parameters, headers);
-  response = httpRequest.getresponse()
-  print response.read() + "\n"
-  httpRequest.close()
+def parsePacket(packet):
+  splitPacket = packet.split("|");
+  if splitPacket[1].strip() == "Unrecognized packet":
+    print packet
+    return False
+  parsedPacket = {'signal': splitPacket[0].strip()}
+  parsedPacket['sensorType'] = splitPacket[1].strip()
+  parsedPacket['sensorID'] = splitPacket[2].strip()
+  parsedPacket['messageType'] = splitPacket[3].strip()
+  parsedPacket['voltage'] = splitPacket[4].strip()
+  parsedPacket['payload'] = splitPacket[5].strip()
+  return parsedPacket
 
-def parseBuffer(serialBuffer, lastTextTime, textDelay):
-  if serialBuffer.find("Button Event:") != -1:
-    buttonEvent = serialBuffer.split("Button Event:")[1].strip()
-    if buttonEvent == "Button Pressed":
-      if time() > (lastTextTime + textDelay):
-        lastTextTime = time()
-        print "The button was pressed. And a text is being sent.\n"
-        sendText(phoneNumber, "The button was pressed")
-      else:
-        print "The button was pressed. But it's too soon to send another text.\n"
-  return lastTextTime
+def parseBuffer(serialBuffer):
+  if serialBuffer.find("|") == -1:
+    print serialBuffer
+    return lastTextTime
+  parsedPacket = parsePacket(serialBuffer)
+  if parsedPacket != False:
+    if parsedPacket['sensorType'] == 'BTN':
+      if parsedPacket['sensorID'] == '1':
+        if parsedPacket['payload'] == "Pushed":
+          print time.strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
+          fileName = "customerCount.txt"
+          try:
+            countFile = open(fileName, 'r')
+            customerCount = int(countFile.read().strip())
+            countFile.close()
+          except:
+            customerCount = 0
+          customerCount = customerCount + 1
+          countFile = open(fileName, 'w')
+          countFile.write(customerCount)
+          countFile.close()
 
 print "\nCtrl-C to close COM port and exit.\n"
 
@@ -48,8 +57,7 @@ try:
     readLetter = serialPort.read() 
     
     if readLetter == "\n":
-      print serialBuffer
-      lastTextTime = parseBuffer(serialBuffer, lastTextTime, textDelay)
+      lastTextTime = parseBuffer(serialBuffer)
       serialBuffer = ""
 
     else:

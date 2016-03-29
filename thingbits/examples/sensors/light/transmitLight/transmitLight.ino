@@ -1,32 +1,25 @@
-#include "exampleSetup.h"
+char* sensorType = "LIT";
+char* myID = "Solar";
+int heartbeatInterval = 3600; // seconds
+int periodicReadingInterval = (10 * 60); // seconds, 0 for no periodic reading
 
-int pin_LED_POWER = 13; 
-int pin_ANTENNA_POWER = 10;
-int pin_LIGHT = A0;
+#include "initialize.h"
 
-void setup() {  
-  pinMode(pin_LED_POWER, OUTPUT);
-  pinMode(pin_ANTENNA_POWER, OUTPUT);
-  exampleSetup();
+void setup() {
+  initializeSensor();
 }
 
 void loop() {
-  char message[22] = "Light Reading: ";
-  char brightness[9];
-  itoa(analogRead(pin_LIGHT), brightness, 10);
+  sleepUntilEvent();
 
-  transmitString((char*) strcat(message, brightness));
-
-  delay(2000);
-} 
-
-void transmitString(char* transmission) {
-  digitalWrite(pin_LED_POWER, HIGH);
-  digitalWrite (pin_ANTENNA_POWER, HIGH);
-  
-  vw_send((uint8_t *)transmission, strlen(transmission));
-  vw_wait_tx();
-  
-  digitalWrite (pin_ANTENNA_POWER, LOW);
-  digitalWrite(pin_LED_POWER, LOW); 
+  processEvent();
 }
+
+void processEvent() {
+  int pinLight = 0;
+  double reading = floor(((double) digitalRead(pinLight))  / 10.2);
+  char readingString[3];
+  dtoa((double) reading, readingString, 0);
+  sendPeriodic(readingString);
+}
+

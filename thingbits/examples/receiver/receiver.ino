@@ -20,16 +20,30 @@ void loop() {
   
   if (vw_have_message()) {
     Serial.print(getSignalStrength());
-    Serial.print("%~");
+    Serial.print("%|");
     
     digitalWrite(pin_LED_POWER, HIGH);
     
     vw_get_message(readBuffer, &bufferLength);
 
+    char checkSumByte;
+    char transmissionString[40];
+    *transmissionString = 0; 
+
     for (int i = 0; i < bufferLength; i++) {
-      Serial.print(char(readBuffer[i])); 
+      if (i == (bufferLength - 1)) { 
+        checkSumByte = char(readBuffer[i]);
+        transmissionString[i] = 0;
+      } else {
+        transmissionString[i] = readBuffer[i];
+      }
     }
-    Serial.println("");
+
+    if (checkSumByte == makeCheckSumByte(transmissionString, strlen(transmissionString))) {
+      Serial.println(transmissionString);
+    } else {
+      Serial.println("Unrecognized packet");
+    }
     
     digitalWrite(pin_LED_POWER,LOW);
   }
@@ -46,4 +60,17 @@ int getSignalStrength() {
 
   return int(floor(float(rawSignalStrenth - 150) / 2.5));
 }
+
+byte makeCheckSumByte(char* transmission, int transmissionLength) {
+  byte checkSumByte = 0;
+  for (int i = 0; i < transmissionLength; i++) {
+    checkSumByte = checkSumByte ^ transmission[i];
+  }
+  if (checkSumByte == 0) {
+    checkSumByte = 1;
+  }
+  return checkSumByte;
+}
+
+
 

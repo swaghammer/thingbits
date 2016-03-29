@@ -31,3 +31,4 @@ except KeyboardInterrupt:
   print "\nClosing COM port and exiting.\n"
 
 serialPort.close()
+

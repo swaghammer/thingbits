@@ -3,7 +3,7 @@ from serial import *
 import serial.tools.list_ports
 from time import clock, sleep
 
-modeSelect = input("Select messaging mode\n1 - When garage is open more than 5 minutes\n2 - Every time it opens or closes\n")
+modeSelect = input("Select messaging mode\n1 - When garagedoor is open too long\n2 - Every time it opens or closes\n")
 mode = "tiltWasOpenTooLong"
 if modeSelect == 2:
   mode = "everyTilt"
@@ -21,7 +21,21 @@ comPort = ports[selectedPort - 1][0]
 
 serialPort = Serial(comPort, 57600, timeout=0, writeTimeout=0)
 serialBuffer = ""
-openSince = 0  
+openSince = 0
+openTooLong = (5 * 60) # five minutes
+
+def parsePacket(packet):
+  splitPacket = packet.split("|");
+  if splitPacket[1].strip() == "Unrecognized packet":
+    print packet
+    return False
+  parsedPacket = {'signal': splitPacket[0].strip()}
+  parsedPacket['sensorType'] = splitPacket[1].strip()
+  parsedPacket['sensorID'] = splitPacket[2].strip()
+  parsedPacket['messageType'] = splitPacket[3].strip()
+  parsedPacket['voltage'] = splitPacket[4].strip()
+  parsedPacket['payload'] = splitPacket[5].strip()
+  return parsedPacket
 
 def sendText(number, message):
   httpRequest = httplib.HTTPConnection("textbelt.com", 80)
@@ -34,35 +48,41 @@ def sendText(number, message):
   httpRequest.close()
 
 def checkOpenTooLong(openSince):
-  if openSince > 0 and (clock() - openSince) > (60 * 5):
-    alert = "Garage door has been open for the last 5 minutes"
+  if openSince > 0 and (clock() - openSince) > (openTooLong):
+    alert = "Garage door has been open too long"
     print "Sending text: " + alert
     sendText(phoneNumber, alert)
     openSince = clock()
   return openSince
 
-def parseBuffer(serialBuffer, openSince):
-  if serialBuffer.find("Tilt Event:") != -1:
-    tiltState = serialBuffer.split("Tilt Event:")[1].strip()
-    if mode == "everyTilt":
-      if tiltState == "Horizontal":
-        sendText(phoneNumber, "Garage door is open")
-      else:
-        sendText(phoneNumber, "Garage door is closed")
-    if mode == "tiltWasOpenTooLong":
-      if tiltState == "Horizontal":
-        if openSince == 0:
-          openSince = clock()
-      else:
-        openSince = 0
+def parseBuffer(serialBuffer):
+  if serialBuffer.find("|") == -1:
+    print serialBuffer
+    return
+  parsedPacket = parsePacket(serialBuffer)
+  if parsedPacket != False:
+    if parsedPacket['sensorType'] == 'TLT':
+      if parsedPacket['sensorID'] == '1':
+        print time.strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
+        if mode == "everyTilt":
+          if parsedPacket['payload'] == "Tilt up":
+            sendText(phoneNumber, "Garage door is open")
+          else:
+            sendText(phoneNumber, "Garage door is closed")
+        if mode == "tiltWasOpenTooLong":
+          if parsedPacket['payload'] == "Tilt up":
+            if openSince == 0:
+              openSince = clock()
+          else:
+            openSince = 0
   return openSince
 
 print "\nCtrl-C to close COM port and exit.\n"
 
 try:
   while (1):
-    if mode == "tiltWasOpenTooLong" and openSince > 0 and (clock() - openSince) > (60 * 5):
-      openSince = checkForOpenTooLong(openSince)
+    if mode == "tiltWasOpenTooLong" and openSince > 0 and (clock() - openSince) > (openTooLong):
+      openSince = checkForOpenTooLong(openSince, openTooLong)
         
     readLetter = serialPort.read() 
     
@@ -79,3 +99,4 @@ except KeyboardInterrupt:
   print "\nClosing COM port and exiting.\n"
 
 serialPort.close()
+
