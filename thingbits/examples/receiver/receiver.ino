@@ -66,9 +66,6 @@ byte makeCheckSumByte(char* transmission, int transmissionLength) {
   for (int i = 0; i < transmissionLength; i++) {
     checkSumByte = checkSumByte ^ transmission[i];
   }
-  if (checkSumByte == 0) {
-    checkSumByte = 1;
-  }
   return checkSumByte;
 }
 
