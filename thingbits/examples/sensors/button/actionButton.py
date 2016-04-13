@@ -31,7 +31,6 @@ def parsePacket(packet):
 def parseBuffer(serialBuffer):
   if serialBuffer.find("|") == -1:
     print serialBuffer
-    return lastTextTime
   parsedPacket = parsePacket(serialBuffer)
   if parsedPacket != False:
     if parsedPacket['sensorType'] == 'BTN':
@@ -57,7 +56,7 @@ try:
     readLetter = serialPort.read() 
     
     if readLetter == "\n":
-      lastTextTime = parseBuffer(serialBuffer)
+      parseBuffer(serialBuffer)
       serialBuffer = ""
 
     else:
