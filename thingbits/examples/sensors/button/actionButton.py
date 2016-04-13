@@ -1,7 +1,7 @@
 import httplib, urllib
 from serial import *
 import serial.tools.list_ports
-from time import time, sleep
+from time import strftime, sleep
 
 ports = sorted(serial.tools.list_ports.comports())
 i = 1
@@ -36,7 +36,7 @@ def parseBuffer(serialBuffer):
     if parsedPacket['sensorType'] == 'BTN':
       if parsedPacket['sensorID'] == '1':
         if parsedPacket['payload'] == "Pushed":
-          print time.strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
+          print strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
           fileName = "customerCount.txt"
           try:
             countFile = open(fileName, 'r')
