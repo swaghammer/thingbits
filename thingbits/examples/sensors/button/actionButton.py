@@ -31,6 +31,7 @@ def parsePacket(packet):
 def parseBuffer(serialBuffer):
   if serialBuffer.find("|") == -1:
     print serialBuffer
+    return
   parsedPacket = parsePacket(serialBuffer)
   if parsedPacket != False:
     if parsedPacket['sensorType'] == 'BTN':
@@ -46,7 +47,7 @@ def parseBuffer(serialBuffer):
             customerCount = 0
           customerCount = customerCount + 1
           countFile = open(fileName, 'w')
-          countFile.write(customerCount)
+          countFile.write(str(customerCount))
           countFile.close()
 
 print "\nCtrl-C to close COM port and exit.\n"
