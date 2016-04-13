@@ -53,7 +53,7 @@ def setStatus(isOpen):
   page = page + "<p style='font-size: 96px; font-size: 20vw;"
   page = page + " margin: 20px; font-family: sans-serif'>"
   status = "CLOSED"
-  if isAvailable == True:
+  if isOpen == True:
     status = "OPEN"
   page = page + status + "</p>"
   page = page + "</body></html>"
