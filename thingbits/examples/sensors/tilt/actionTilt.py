@@ -55,7 +55,7 @@ def checkOpenTooLong(openSince):
     openSince = clock()
   return openSince
 
-def parseBuffer(serialBuffer):
+def parseBuffer(serialBuffer, openSince):
   if serialBuffer.find("|") == -1:
     print serialBuffer
     return
