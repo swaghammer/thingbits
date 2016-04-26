@@ -62,7 +62,7 @@ def parseBuffer(serialBuffer, openSince):
   parsedPacket = parsePacket(serialBuffer)
   if parsedPacket != False:
     if parsedPacket['sensorType'] == 'TLT':
-      if parsedPacket['sensorID'] == '1':
+      if parsedPacket['sensorID'] == 'Garage':
         print time.strftime("%Y-%m-%d %H:%M:%S|") + serialBuffer.strip()
         if mode == "everyTilt":
           if parsedPacket['payload'] == "Tilt up":
