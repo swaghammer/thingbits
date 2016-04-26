@@ -29,7 +29,7 @@ lastTweet = tweetDelay * -1
 exercising = False
 
 def parsePacket(packet):
-  splitPacket = packet.split("|");
+  splitPacket = packet.split("|")
   if splitPacket[1].strip() == "Unrecognized packet":
     print packet
     return False
@@ -44,17 +44,14 @@ def parsePacket(packet):
 def parseBuffer(serialBuffer):
   if serialBuffer.find("|") == -1:
     print serialBuffer
-    return lastMotion
+    return False
   parsedPacket = parsePacket(serialBuffer)
   if parsedPacket != False:
     if parsedPacket['sensorType'] == 'SHK':
       if parsedPacket['sensorID'] == 'Exercise':
         if parsedPacket['payload'] == "Shake":
-          lastMotion = time.time()
-          if motionDetected == False:
-            motionDetected = True
-            setStatus(False)
-  return lastMotion
+          return True
+  return False
 
 print "\nCtrl-C to close COM port and exit.\n"
 
@@ -69,7 +66,8 @@ try:
       serialBuffer += readLetter
       
     if clock() > (lastTweet + tweetDelay) and exercising == True:
-      api.update_status("I'm exercising!")
+      tweet = "I'm exercising!"
+      api.update_status(tweet)
       print "Tweeted: " + tweet
       lastTweet = clock()
       
