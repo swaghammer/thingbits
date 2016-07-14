@@ -97,7 +97,7 @@ byte GetRssPct () { int RssVal; RssVal=analogRead(pin_RSS);  //toss the first re
 void ResetRSS() { RssMin=255;  EEPROM.write(EE_RssMin,RssMin);
                   RssMax=0;   EEPROM.write(EE_RssMax,RssMax); } 
 
-void PrntHdr() {Serial.print("RX|");Serial.print(RssNow);Serial.print("%|"); } 
+void PrntHdr() {Serial.print(RssNow);Serial.print("%|"); } 
 
 void GetRssMin() {int RssVal; RssVal=analogRead(pin_RSS); 
   for (int x=10;x>0;x--) {RssVal= (RssVal + analogRead(pin_RSS))/2; }
